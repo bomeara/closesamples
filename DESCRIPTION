@@ -1,0 +1,20 @@
+Type: Package
+Package: closesamples
+Title: Gets feasible taxon samples on a tree
+Version: 1.0
+Date: 2020-02-25
+Author: Brian C. O'Meara
+Maintainer: Brian C. O'Meara <omeara.brian@gmail.com>
+Description: Often you want to pick species at random, but don't
+    have access to all the possible species, and your group might be a
+    nonrandom set. However, you might have a taxonomy, perhaps a bad one,
+    for all the species. This will let you pick species at random on that
+    full taxonomy and then pick a species out of the possible set closest
+    to this. You could still have a biased sample, but way less biased.
+License: GPL 3.0
+Imports:
+    ape
+Suggests:
+    anRpackage,
+    testthat (>= 2.1.0)
+RoxygenNote: 7.0.2
