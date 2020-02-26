@@ -13,8 +13,10 @@ Description: Often you want to pick species at random, but don't
     to this. You could still have a biased sample, but way less biased.
 License: GPL 3.0
 Imports:
-    ape
+    ape,
+    taxize
 Suggests:
     anRpackage,
     testthat (>= 2.1.0)
 RoxygenNote: 7.0.2
+Encoding: UTF-8
