@@ -12,6 +12,8 @@ SubsampleTree(phy_focal, n, phy_full = NULL, replace = TRUE)
 \item{n}{The number of taxa to include}
 
 \item{phy_full}{The larger tree giving relationships}
+
+\item{replace}{If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa}
 }
 \value{
 A phylo object where taxa are sampled based on representing flat sampling from taxonomy

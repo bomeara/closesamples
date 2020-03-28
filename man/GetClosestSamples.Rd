@@ -12,6 +12,8 @@ GetClosestSamples(n, phy_full, taxa_possible, replace = TRUE)
 \item{phy_full}{A phylo object with all possible taxa to sammple from}
 
 \item{taxa_possible}{A vector of taxon names that are possible to study (often on another tree)}
+
+\item{replace}{If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa}
 }
 \value{
 A data.frame of chosen taxa, closest possible match, and distance between them

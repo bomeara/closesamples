@@ -5,12 +5,14 @@
 \title{Get similarity
 Uses ape's cophenetic.phylo to get patristic distances between pairs of taxa, then makes the diagonals Inf. If the tree has no branch lengths, makes every edge length 1.}
 \usage{
-GetSimilarity(phy_full, taxa_possible)
+GetSimilarity(phy_full, taxa_possible, truncate_full_to_mrca = FALSE)
 }
 \arguments{
 \item{phy_full}{A phylo object with all possible taxa to sammple from}
 
 \item{taxa_possible}{A vector of taxon names that are possible to study (often on another tree)}
+
+\item{truncate_full_to_mrca}{If TRUE, prune the full tree to the node that is the MRCA of the}
 }
 \value{
 A matrix with tips on the rows and columns and patristic distances in the cells. Rows are tips on the phy_full tree, columns are taxa in the taxa_possible vector

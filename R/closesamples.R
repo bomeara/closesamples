@@ -2,8 +2,12 @@
 #' Uses ape's cophenetic.phylo to get patristic distances between pairs of taxa, then makes the diagonals Inf. If the tree has no branch lengths, makes every edge length 1.
 #' @param phy_full A phylo object with all possible taxa to sammple from
 #' @param taxa_possible A vector of taxon names that are possible to study (often on another tree)
+#' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the
 #' @return A matrix with tips on the rows and columns and patristic distances in the cells. Rows are tips on the phy_full tree, columns are taxa in the taxa_possible vector
-GetSimilarity <- function(phy_full, taxa_possible) {
+GetSimilarity <- function(phy_full, taxa_possible, truncate_full_to_mrca=FALSE) {
+  if(truncate_full_to_mrca) {
+    phy_full <- ape::extract.clade(phy_full, node=ape::getMRCA(phy_full, tip=phy_full$tip.label[phy_full$tip.label %in% taxa_possible]))
+  }
   if(is.null(phy_full$edge.length)) {
     phy_full <- ape::compute.brlen(phy_full, 1)
   }
@@ -28,7 +32,7 @@ GetClosest <- function(focal_taxon, similarity_matrix) {
 #' @param n How many taxa to sample
 #' @param phy_full A phylo object with all possible taxa to sammple from
 #' @param taxa_possible A vector of taxon names that are possible to study (often on another tree)
-#' @replace If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa
+#' @param replace If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa
 #' @export
 #' @return A data.frame of chosen taxa, closest possible match, and distance between them
 GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE) {
@@ -105,7 +109,7 @@ GetEnclosingTaxonomy <- function(phy_focal) {
 #' @param phy_focal The tree to subsample
 #' @param n The number of taxa to include
 #' @param phy_full The larger tree giving relationships
-#' @replace If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa
+#' @param replace If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa
 #' @return A phylo object where taxa are sampled based on representing flat sampling from taxonomy
 #' @export
 SubsampleTree <- function(phy_focal, n, phy_full=NULL, replace=TRUE) {
