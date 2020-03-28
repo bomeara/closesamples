@@ -4,7 +4,13 @@
 \alias{GetClosestSamples}
 \title{Get n samples}
 \usage{
-GetClosestSamples(n, phy_full, taxa_possible, replace = TRUE)
+GetClosestSamples(
+  n,
+  phy_full,
+  taxa_possible,
+  replace = TRUE,
+  truncate_full_to_mrca = FALSE
+)
 }
 \arguments{
 \item{n}{How many taxa to sample}
@@ -14,6 +20,8 @@ GetClosestSamples(n, phy_full, taxa_possible, replace = TRUE)
 \item{taxa_possible}{A vector of taxon names that are possible to study (often on another tree)}
 
 \item{replace}{If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa}
+
+\item{truncate_full_to_mrca}{If TRUE, prune the full tree to the node that is the MRCA of the}
 }
 \value{
 A data.frame of chosen taxa, closest possible match, and distance between them

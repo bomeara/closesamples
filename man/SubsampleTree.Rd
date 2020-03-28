@@ -4,7 +4,13 @@
 \alias{SubsampleTree}
 \title{Return a sampled tree}
 \usage{
-SubsampleTree(phy_focal, n, phy_full = NULL, replace = TRUE)
+SubsampleTree(
+  phy_focal,
+  n,
+  phy_full = NULL,
+  replace = TRUE,
+  truncate_full_to_mrca = FALSE
+)
 }
 \arguments{
 \item{phy_focal}{The tree to subsample}
@@ -14,6 +20,8 @@ SubsampleTree(phy_focal, n, phy_full = NULL, replace = TRUE)
 \item{phy_full}{The larger tree giving relationships}
 
 \item{replace}{If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa}
+
+\item{truncate_full_to_mrca}{If TRUE, prune the full tree to the node that is the MRCA of the}
 }
 \value{
 A phylo object where taxa are sampled based on representing flat sampling from taxonomy

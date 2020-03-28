@@ -33,11 +33,12 @@ GetClosest <- function(focal_taxon, similarity_matrix) {
 #' @param phy_full A phylo object with all possible taxa to sammple from
 #' @param taxa_possible A vector of taxon names that are possible to study (often on another tree)
 #' @param replace If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa
+#' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the
 #' @export
 #' @return A data.frame of chosen taxa, closest possible match, and distance between them
-GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE) {
+GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate_full_to_mrca=FALSE) {
   chosen.df <- data.frame(chosen=rep(NA,n), closest=rep(NA,n), distance=rep(NA,n))
-  similarity_matrix_original <- GetSimilarity(phy_full, taxa_possible)
+  similarity_matrix_original <- GetSimilarity(phy_full, taxa_possible, truncate_full_to_mrca=truncate_full_to_mrca)
   similarity_matrix <- similarity_matrix_original
   if(!replace & n>length(taxa_possible)) {
     stop("You have asked for more unique samples (n) than you have possible taxa")
@@ -110,16 +111,17 @@ GetEnclosingTaxonomy <- function(phy_focal) {
 #' @param n The number of taxa to include
 #' @param phy_full The larger tree giving relationships
 #' @param replace If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa
+#' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the
 #' @return A phylo object where taxa are sampled based on representing flat sampling from taxonomy
 #' @export
-SubsampleTree <- function(phy_focal, n, phy_full=NULL, replace=TRUE) {
+SubsampleTree <- function(phy_focal, n, phy_full=NULL, replace=TRUE, truncate_full_to_mrca=FALSE) {
   if(is.null(phy_full)) {
     phy_full <- GetEnclosingTaxonomy(phy_focal$tip.label)
     if(ape::Nnode(phy_full)==1) {
       warning("Taxonomy tree is completely unresolved")
     }
   }
-  samples <- GetClosestSamples(n=n, phy_full=phy_full, taxa_possible=phy_focal$tip.label, replace=replace)
+  samples <- GetClosestSamples(n=n, phy_full=phy_full, taxa_possible=phy_focal$tip.label, replace=replace, truncate_full_to_mrca=truncate_full_to_mrca)
   phy_sample <- ape::keep.tip(phy_focal, samples$closest)
   return(phy_sample)
 }
