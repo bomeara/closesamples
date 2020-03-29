@@ -94,6 +94,7 @@ GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate
     full_heights <- phytools::nodeHeights(phy_full)
     print("Got heights of all nodes on the full tree")
     run_count <- 0
+    start_time <- Sys.time()
     for (sample_iteration in sequence(n)) {
       chosen_taxon <- chosen_taxa[sample_iteration]
       names_distances <- rep(NA, length(taxa_possible_pruned))
@@ -109,7 +110,8 @@ GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate
         #utils::setTxtProgressBar(pb, value=potential_taxon+(sample_iteration-1)*ape::Ntip(phy_full))
         run_count <- run_count+1
       }
-      print(run_count/(n*length(taxa_possible_pruned)))
+      current_time <- Sys.time()
+      print(paste0(100*run_count/(n*length(taxa_possible_pruned)), "% done; ", round(difftime(current_time, start_time, units="min"),2), " min elapsed so far; approx. ", round(((n*length(taxa_possible_pruned)-run_count)*as.numeric(difftime(current_time, start_time, units="min")) / run_count)), " min remain"))
       closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
       chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, min(names_distances), stringsAsFactors=FALSE)
 
