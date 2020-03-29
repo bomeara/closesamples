@@ -8,6 +8,11 @@ GetClosest(focal_taxon, similarity_matrix)
 }
 \arguments{
 \item{focal_taxon}{String with taxon name to find closest match to}
+
+\item{similarity}{matrix Matrix from GetSimilarity function}
+}
+\value{
+The taxon closest to it
 }
 \description{
 Get the closest taxon to the focal taxon

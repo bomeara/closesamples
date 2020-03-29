@@ -9,7 +9,8 @@ SubsampleTree(
   n,
   phy_full = NULL,
   replace = TRUE,
-  truncate_full_to_mrca = FALSE
+  truncate_full_to_mrca = FALSE,
+  less_memory = FALSE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ SubsampleTree(
 \item{replace}{If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa}
 
 \item{truncate_full_to_mrca}{If TRUE, prune the full tree to the node that is the MRCA of the}
+
+\item{less_memory}{If TRUE, uses a much slower approach that will not create giant matrices}
 }
 \value{
 A phylo object where taxa are sampled based on representing flat sampling from taxonomy

@@ -14,7 +14,8 @@ Description: Often you want to pick species at random, but don't
 License: GPL 3.0
 Imports:
     ape,
-    taxize
+    taxize,
+    phytools
 Suggests:
     anRpackage,
     testthat (>= 2.1.0)

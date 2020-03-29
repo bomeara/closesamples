@@ -22,6 +22,8 @@ GetSimilarity <- function(phy_full, taxa_possible, truncate_full_to_mrca=FALSE) 
 
 #' Get the closest taxon to the focal taxon
 #' @param focal_taxon String with taxon name to find closest match to
+#' @param similarity matrix Matrix from GetSimilarity function
+#' @return The taxon closest to it
 GetClosest <- function(focal_taxon, similarity_matrix) {
   smallest <- which(similarity_matrix[focal_taxon,]==min(similarity_matrix[focal_taxon,]))
   return(sample(names(smallest), 1))
@@ -34,21 +36,41 @@ GetClosest <- function(focal_taxon, similarity_matrix) {
 #' @param taxa_possible A vector of taxon names that are possible to study (often on another tree)
 #' @param replace If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa
 #' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the
+#' @param less_memory If TRUE, uses a much slower approach that will not create giant matrices
 #' @export
 #' @return A data.frame of chosen taxa, closest possible match, and distance between them
-GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate_full_to_mrca=FALSE) {
+GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate_full_to_mrca=FALSE, less_memory=FALSE) {
   chosen.df <- data.frame(chosen=rep(NA,n), closest=rep(NA,n), distance=rep(NA,n))
-  similarity_matrix_original <- GetSimilarity(phy_full, taxa_possible, truncate_full_to_mrca=truncate_full_to_mrca)
-  similarity_matrix <- similarity_matrix_original
-  if(!replace & n>length(taxa_possible)) {
-    stop("You have asked for more unique samples (n) than you have possible taxa")
-  }
-  for (sample_iteration in sequence(n)) {
-    chosen_taxon <- sample(rownames(similarity_matrix),1)
-    closest_taxon <- GetClosest(chosen_taxon, similarity_matrix)
-    chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, similarity_matrix[chosen_taxon, closest_taxon], stringsAsFactors=FALSE)
+  if(!less_memory) {
+    similarity_matrix_original <- GetSimilarity(phy_full, taxa_possible, truncate_full_to_mrca=truncate_full_to_mrca)
+    similarity_matrix <- similarity_matrix_original
+    if(!replace & n>length(taxa_possible)) {
+      stop("You have asked for more unique samples (n) than you have possible taxa")
+    }
+    for (sample_iteration in sequence(n)) {
+      chosen_taxon <- sample(rownames(similarity_matrix),1)
+      closest_taxon <- GetClosest(chosen_taxon, similarity_matrix)
+      chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, similarity_matrix[chosen_taxon, closest_taxon], stringsAsFactors=FALSE)
+      if(!replace) {
+        similarity_matrix <- similarity_matrix[,-chosen_taxon]
+      }
+    }
+  } else {
+    if(truncate_full_to_mrca) {
+      phy_full <- ape::extract.clade(phy_full, node=ape::getMRCA(phy_full, tip=phy_full$tip.label[phy_full$tip.label %in% taxa_possible]))
+    }
     if(!replace) {
-      similarity_matrix <- similarity_matrix[,-chosen_taxon]
+      stop("Sorry, can't use less_memory with replace=FALSE")
+    }
+    for (sample_iteration in sequence(n)) {
+      chosen_taxon <- sample(taxa_possible,1)
+      names_distances <- rep(NA, ape::Ntip(phy_full))
+      names(names_distances) <- phy_full$tip.label
+      for (potential_taxon in sequence(ape::Ntip(phy_full))) {
+        names_distances[potential_taxon] <- phytools::fastDist(phy_full, chosen_taxon, phy_full$tip.label[potential_taxon])
+      }
+      closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
+      chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, min(names_distances), stringsAsFactors=FALSE)
     }
   }
   return(chosen.df)
@@ -112,16 +134,17 @@ GetEnclosingTaxonomy <- function(phy_focal) {
 #' @param phy_full The larger tree giving relationships
 #' @param replace If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa
 #' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the
+#' @param less_memory If TRUE, uses a much slower approach that will not create giant matrices
 #' @return A phylo object where taxa are sampled based on representing flat sampling from taxonomy
 #' @export
-SubsampleTree <- function(phy_focal, n, phy_full=NULL, replace=TRUE, truncate_full_to_mrca=FALSE) {
+SubsampleTree <- function(phy_focal, n, phy_full=NULL, replace=TRUE, truncate_full_to_mrca=FALSE, less_memory=FALSE) {
   if(is.null(phy_full)) {
     phy_full <- GetEnclosingTaxonomy(phy_focal$tip.label)
     if(ape::Nnode(phy_full)==1) {
       warning("Taxonomy tree is completely unresolved")
     }
   }
-  samples <- GetClosestSamples(n=n, phy_full=phy_full, taxa_possible=phy_focal$tip.label, replace=replace, truncate_full_to_mrca=truncate_full_to_mrca)
+  samples <- GetClosestSamples(n=n, phy_full=phy_full, taxa_possible=phy_focal$tip.label, replace=replace, truncate_full_to_mrca=truncate_full_to_mrca, less_memory=less_memory)
   phy_sample <- ape::keep.tip(phy_focal, samples$closest)
   return(phy_sample)
 }
