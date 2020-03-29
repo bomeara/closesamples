@@ -15,7 +15,8 @@ License: GPL 3.0
 Imports:
     ape,
     taxize,
-    phytools
+    phytools,
+    utils
 Suggests:
     anRpackage,
     testthat (>= 2.1.0)

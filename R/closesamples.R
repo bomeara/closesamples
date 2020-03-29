@@ -62,6 +62,8 @@ GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate
     if(!replace) {
       stop("Sorry, can't use less_memory with replace=FALSE")
     }
+    print("Progress in sampling species")
+    pb <- utils::txtProgressBar(min=0, max=n)
     for (sample_iteration in sequence(n)) {
       chosen_taxon <- sample(taxa_possible,1)
       names_distances <- rep(NA, ape::Ntip(phy_full))
@@ -71,6 +73,7 @@ GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate
       }
       closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
       chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, min(names_distances), stringsAsFactors=FALSE)
+      utils::setTxtProgressBar(pb, value=sample_iteration)
     }
   }
   return(chosen.df)
