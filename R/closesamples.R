@@ -32,7 +32,7 @@ GetClosest <- function(focal_taxon, similarity_matrix) {
 #' Get n samples
 #'
 #' @param n How many taxa to sample
-#' @param phy_full A phylo object with all possible taxa to sammple from
+#' @param phy_full A phylo object with all possible taxa to sample from
 #' @param taxa_possible A vector of taxon names that are possible to study (often on another tree)
 #' @param replace If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa
 #' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the
@@ -40,11 +40,15 @@ GetClosest <- function(focal_taxon, similarity_matrix) {
 #' @export
 #' @return A data.frame of chosen taxa, closest possible match, and distance between them
 GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate_full_to_mrca=FALSE, less_memory=FALSE) {
+  taxa_possible_pruned <- taxa_possible[which(taxa_possible %in% phy_full$tip.label)] #if not on the full tree, we can't find it
+  if(length(taxa_possible_pruned)<length(taxa_possible)) {
+    warning(paste0("Only ", length(taxa_possible_pruned), " of ", length(taxa_possible), " taxa passed matched taxa on the phy_full tree. The others have been excluded. Examples of taxa that failed are ", paste0(head(taxa_possible[-which(taxa_possible %in% phy_full$tip.label)]), collapse=", ")))
+  }
   chosen.df <- data.frame(chosen=rep(NA,n), closest=rep(NA,n), distance=rep(NA,n))
   if(!less_memory) {
-    similarity_matrix_original <- GetSimilarity(phy_full, taxa_possible, truncate_full_to_mrca=truncate_full_to_mrca)
+    similarity_matrix_original <- GetSimilarity(phy_full, taxa_possible_pruned, truncate_full_to_mrca=truncate_full_to_mrca)
     similarity_matrix <- similarity_matrix_original
-    if(!replace & n>length(taxa_possible)) {
+    if(!replace & n>length(taxa_possible_pruned)) {
       stop("You have asked for more unique samples (n) than you have possible taxa")
     }
     for (sample_iteration in sequence(n)) {
@@ -57,23 +61,58 @@ GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate
     }
   } else {
     if(truncate_full_to_mrca) {
-      phy_full <- ape::extract.clade(phy_full, node=ape::getMRCA(phy_full, tip=phy_full$tip.label[phy_full$tip.label %in% taxa_possible]))
+      phy_full <- ape::extract.clade(phy_full, node=ape::getMRCA(phy_full, tip=phy_full$tip.label[phy_full$tip.label %in% taxa_possible_pruned]))
     }
-    if(!replace) {
-      stop("Sorry, can't use less_memory with replace=FALSE")
-    }
+
     print("Progress in sampling species")
-    pb <- utils::txtProgressBar(min=0, max=n)
+    #pb <- utils::txtProgressBar(min=0, max=n*ape::Ntip(phy_full))
+    # for (sample_iteration in sequence(n)) {
+    #   chosen_taxon <- sample(taxa_possible,1)
+    #   names_distances <- rep(NA, ape::Ntip(phy_full))
+    #   names(names_distances) <- phy_full$tip.label
+    #   for (potential_taxon in sequence(ape::Ntip(phy_full))) {
+    #     run_count <- run_count + 1
+    #     #print(potential_taxon)
+    #     names_distances[potential_taxon] <- phytools::fastDist(phy_full, chosen_taxon, phy_full$tip.label[potential_taxon])
+    #     #utils::setTxtProgressBar(pb, value=potential_taxon+(sample_iteration-1)*ape::Ntip(phy_full))
+    #     print(run_count/(n*ape::Ntip(phy_full)))
+    #   }
+    #   closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
+    #   chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, min(names_distances), stringsAsFactors=FALSE)
+    #
+    # }
+
+    # The logic here is based on phytools::fastHeight, but with caching to prevent all the lookups
+    potential_taxon_list <- list()
+    chosen_taxa <- sample(phy_full$tip.label, n, replace=replace)
+    print("Chose taxa from the full tree")
+    for (potential_closest_i in sequence(length(taxa_possible_pruned))) {
+      actual_id <- which(phy_full$tip.label == taxa_possible_pruned[potential_closest_i])
+      potential_taxon_list[[potential_closest_i]] <- list(id=actual_id, ancestors=c(actual_id, phangorn::Ancestors(phy_full, actual_id, type="all")))
+    }
+    print("Got ancestral paths for the potential taxa")
+    full_heights <- phytools::nodeHeights(phy_full)
+    print("Got heights of all nodes on the full tree")
+    run_count <- 0
     for (sample_iteration in sequence(n)) {
-      chosen_taxon <- sample(taxa_possible,1)
-      names_distances <- rep(NA, ape::Ntip(phy_full))
-      names(names_distances) <- phy_full$tip.label
-      for (potential_taxon in sequence(ape::Ntip(phy_full))) {
-        names_distances[potential_taxon] <- phytools::fastDist(phy_full, chosen_taxon, phy_full$tip.label[potential_taxon])
+      chosen_taxon <- chosen_taxa[sample_iteration]
+      names_distances <- rep(NA, length(taxa_possible_pruned))
+      names(names_distances) <- taxa_possible_pruned
+
+      chosen_taxon_id <- which(phy_full$tip.label == chosen_taxon)
+      chosen_taxon_ancestors <- c(chosen_taxon_id, phangorn::Ancestors(phy_full, chosen_taxon_id, type="all"))
+      for (potential_closest_taxon in sequence(length(taxa_possible_pruned))) {
+        mrca_node <- intersect(potential_taxon_list[[potential_closest_taxon]]$ancestors, chosen_taxon_ancestors)[1]
+        #print(mrca_node)
+        #print(potential_taxon_list[[potential_closest_taxon]]$ancestors)
+        names_distances[potential_closest_taxon] <- full_heights[which(phy_full$edge==chosen_taxon_id)[1]]+full_heights[which(phy_full$edge==potential_taxon_list[[potential_closest_taxon]]$id)[1]] - 2*full_heights[which(phy_full$edge==mrca_node)[1]]
+        #utils::setTxtProgressBar(pb, value=potential_taxon+(sample_iteration-1)*ape::Ntip(phy_full))
+        run_count <- run_count+1
       }
+      print(run_count/(n*length(taxa_possible_pruned)))
       closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
       chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, min(names_distances), stringsAsFactors=FALSE)
-      utils::setTxtProgressBar(pb, value=sample_iteration)
+
     }
   }
   return(chosen.df)

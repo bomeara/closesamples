@@ -16,7 +16,8 @@ Imports:
     ape,
     taxize,
     phytools,
-    utils
+    utils,
+    phangorn
 Suggests:
     anRpackage,
     testthat (>= 2.1.0)
