@@ -1,21 +1,20 @@
 #' Get similarity
 #' Uses ape's cophenetic.phylo to get patristic distances between pairs of taxa, then makes the diagonals Inf. If the tree has no branch lengths, makes every edge length 1.
-#' @param phy_full A phylo object with all possible taxa to sammple from
-#' @param taxa_possible A vector of taxon names that are possible to study (often on another tree)
+#' @param phy_full A phylo object with all feasible taxa to sammple from
+#' @param taxa_feasible A vector of taxon names that are feasible to study (often on another tree)
 #' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the
-#' @return A matrix with tips on the rows and columns and patristic distances in the cells. Rows are tips on the phy_full tree, columns are taxa in the taxa_possible vector
-GetSimilarity <- function(phy_full, taxa_possible, truncate_full_to_mrca=FALSE) {
+#' @return A matrix with tips on the rows and columns and patristic distances in the cells. Rows are tips on the phy_full tree, columns are taxa in the taxa_feasible vector
+GetSimilarity <- function(phy_full, taxa_feasible, truncate_full_to_mrca=FALSE) {
   if(truncate_full_to_mrca) {
-    phy_full <- ape::extract.clade(phy_full, node=ape::getMRCA(phy_full, tip=phy_full$tip.label[phy_full$tip.label %in% taxa_possible]))
+    phy_full <- ape::extract.clade(phy_full, node=ape::getMRCA(phy_full, tip=phy_full$tip.label[phy_full$tip.label %in% taxa_feasible]))
   }
   if(is.null(phy_full$edge.length)) {
     phy_full <- ape::compute.brlen(phy_full, 1)
   }
   cophy <- ape::cophenetic.phylo(phy_full)
-  diag(cophy) <- Inf
-  cophy <- cophy[,colnames(cophy) %in% taxa_possible]
+  cophy <- cophy[,colnames(cophy) %in% taxa_feasible]
   if(ncol(cophy)<2) {
-    warning(paste0("Only ", ncol(cophy), " taxa in phy_full matched the taxa_possible vector. Do the names overlap? No spaces in one, underscores in another, etc.?"))
+    warning(paste0("Only ", ncol(cophy), " taxa in phy_full matched the taxa_feasible vector. Do the names overlap? No spaces in one, underscores in another, etc.?"))
   }
   return(cophy)
 }
@@ -32,42 +31,48 @@ GetClosest <- function(focal_taxon, similarity_matrix) {
 #' Get n samples
 #'
 #' @param n How many taxa to sample
-#' @param phy_full A phylo object with all possible taxa to sample from
-#' @param taxa_possible A vector of taxon names that are possible to study (often on another tree)
-#' @param replace If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa
+#' @param phy_full A phylo object with all feasible taxa to sample from
+#' @param taxa_feasible A vector of taxon names that are feasible to study (often on another tree)
+#' @param replace_full If TRUE, will allow selecting the same taxon from the full tree more than once. If FALSE, forbids this. Both cases return n taxa
+#' @param replace_feasible If TRUE, will allow selecting the same taxon from the set of feasible taxa more than once (returning a smaller than desired tree). If FALSE, forbids this.
 #' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the
 #' @param less_memory If TRUE, uses a much slower approach that will not create giant matrices
 #' @export
-#' @return A data.frame of chosen taxa, closest possible match, and distance between them
-GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate_full_to_mrca=FALSE, less_memory=FALSE) {
-  taxa_possible_pruned <- taxa_possible[which(taxa_possible %in% phy_full$tip.label)] #if not on the full tree, we can't find it
-  if(length(taxa_possible_pruned)<length(taxa_possible)) {
-    warning(paste0("Only ", length(taxa_possible_pruned), " of ", length(taxa_possible), " taxa passed matched taxa on the phy_full tree. The others have been excluded. Examples of taxa that failed are ", paste0(head(taxa_possible[-which(taxa_possible %in% phy_full$tip.label)]), collapse=", ")))
+#' @return A data.frame of chosen taxa, closest feasible match, and distance between them
+GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, replace_feasible=FALSE, truncate_full_to_mrca=FALSE, less_memory=FALSE) {
+  taxa_feasible_pruned <- taxa_feasible[which(taxa_feasible %in% phy_full$tip.label)] #if not on the full tree, we can't find it
+  if(length(taxa_feasible_pruned)<length(taxa_feasible)) {
+    warning(paste0("Only ", length(taxa_feasible_pruned), " of ", length(taxa_feasible), " taxa passed matched taxa on the phy_full tree. The others have been excluded. Examples of taxa that failed are ", paste0(head(taxa_feasible[-which(taxa_feasible %in% phy_full$tip.label)]), collapse=", ")))
   }
   chosen.df <- data.frame(chosen=rep(NA,n), closest=rep(NA,n), distance=rep(NA,n))
   if(!less_memory) {
-    similarity_matrix_original <- GetSimilarity(phy_full, taxa_possible_pruned, truncate_full_to_mrca=truncate_full_to_mrca)
+    similarity_matrix_original <- GetSimilarity(phy_full, taxa_feasible_pruned, truncate_full_to_mrca=truncate_full_to_mrca)
     similarity_matrix <- similarity_matrix_original
-    if(!replace & n>length(taxa_possible_pruned)) {
-      stop("You have asked for more unique samples (n) than you have possible taxa")
+    if(!replace_feasible & n>length(taxa_feasible_pruned)) {
+      stop("You have asked for more unique samples (n) than you have feasible taxa")
     }
     for (sample_iteration in sequence(n)) {
       chosen_taxon <- sample(rownames(similarity_matrix),1)
       closest_taxon <- GetClosest(chosen_taxon, similarity_matrix)
       chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, similarity_matrix[chosen_taxon, closest_taxon], stringsAsFactors=FALSE)
-      if(!replace) {
-        similarity_matrix <- similarity_matrix[,-chosen_taxon]
+
+      # remember full is rows, feasible is columns
+      if(!replace_full) {
+        similarity_matrix <- similarity_matrix[!rownames(similarity_matrix) %in% chosen_taxon,]
+      }
+      if(!replace_feasible) {
+        similarity_matrix[,!colnames(similarity_matrix) %in% closest_taxon]
       }
     }
   } else {
     if(truncate_full_to_mrca) {
-      phy_full <- ape::extract.clade(phy_full, node=ape::getMRCA(phy_full, tip=phy_full$tip.label[phy_full$tip.label %in% taxa_possible_pruned]))
+      phy_full <- ape::extract.clade(phy_full, node=ape::getMRCA(phy_full, tip=phy_full$tip.label[phy_full$tip.label %in% taxa_feasible_pruned]))
     }
 
     print("Progress in sampling species")
     #pb <- utils::txtProgressBar(min=0, max=n*ape::Ntip(phy_full))
     # for (sample_iteration in sequence(n)) {
-    #   chosen_taxon <- sample(taxa_possible,1)
+    #   chosen_taxon <- sample(taxa_feasible,1)
     #   names_distances <- rep(NA, ape::Ntip(phy_full))
     #   names(names_distances) <- phy_full$tip.label
     #   for (potential_taxon in sequence(ape::Ntip(phy_full))) {
@@ -84,10 +89,10 @@ GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate
 
     # The logic here is based on phytools::fastHeight, but with caching to prevent all the lookups
     potential_taxon_list <- list()
-    chosen_taxa <- sample(phy_full$tip.label, n, replace=replace)
+    chosen_taxa <- sample(phy_full$tip.label, n, replace=replace_full)
     print("Chose taxa from the full tree")
-    for (potential_closest_i in sequence(length(taxa_possible_pruned))) {
-      actual_id <- which(phy_full$tip.label == taxa_possible_pruned[potential_closest_i])
+    for (potential_closest_i in sequence(length(taxa_feasible_pruned))) {
+      actual_id <- which(phy_full$tip.label == taxa_feasible_pruned[potential_closest_i])
       potential_taxon_list[[potential_closest_i]] <- list(id=actual_id, ancestors=c(actual_id, phangorn::Ancestors(phy_full, actual_id, type="all")))
     }
     print("Got ancestral paths for the potential taxa")
@@ -97,12 +102,12 @@ GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate
     start_time <- Sys.time()
     for (sample_iteration in sequence(n)) {
       chosen_taxon <- chosen_taxa[sample_iteration]
-      names_distances <- rep(NA, length(taxa_possible_pruned))
-      names(names_distances) <- taxa_possible_pruned
+      names_distances <- rep(NA, length(taxa_feasible_pruned))
+      names(names_distances) <- taxa_feasible_pruned
 
       chosen_taxon_id <- which(phy_full$tip.label == chosen_taxon)
       chosen_taxon_ancestors <- c(chosen_taxon_id, phangorn::Ancestors(phy_full, chosen_taxon_id, type="all"))
-      for (potential_closest_taxon in sequence(length(taxa_possible_pruned))) {
+      for (potential_closest_taxon in sequence(length(taxa_feasible_pruned))) {
         mrca_node <- intersect(potential_taxon_list[[potential_closest_taxon]]$ancestors, chosen_taxon_ancestors)[1]
         #print(mrca_node)
         #print(potential_taxon_list[[potential_closest_taxon]]$ancestors)
@@ -111,7 +116,7 @@ GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate
         run_count <- run_count+1
       }
       current_time <- Sys.time()
-      print(paste0(100*run_count/(n*length(taxa_possible_pruned)), "% done; ", round(difftime(current_time, start_time, units="min"),2), " min elapsed so far; approx. ", round(((n*length(taxa_possible_pruned)-run_count)*as.numeric(difftime(current_time, start_time, units="min")) / run_count)), " min remain"))
+      print(paste0(100*run_count/(n*length(taxa_feasible_pruned)), "% done; ", round(difftime(current_time, start_time, units="min"),2), " min elapsed so far; approx. ", round(((n*length(taxa_feasible_pruned)-run_count)*as.numeric(difftime(current_time, start_time, units="min")) / run_count)), " min remain"))
       closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
       chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, min(names_distances), stringsAsFactors=FALSE)
 
@@ -120,17 +125,17 @@ GetClosestSamples <- function(n, phy_full, taxa_possible, replace=TRUE, truncate
   return(chosen.df)
 }
 
-#' Get enclosing taxonomy for a focal tree
+#' Get enclosing taxonomy for a feasible tree
 #'
-#' If you don't have a taxonomy tree for the focal tree, this will find one
+#' If you don't have a taxonomy tree for the feasible tree, this will find one
 #' @param tips A vetor of taxon names
 #' @return A phylogeny of the enclosing taxonomy
 #' @export
-GetEnclosingTaxonomy <- function(phy_focal) {
+GetEnclosingTaxonomy <- function(phy_feasible) {
   # OTOL attempt, but after all this can only return trees of 25K taxa
 
   # ott_ids <- c()
-  # focal_tips <- phy_focal$tip.label
+  # focal_tips <- phy_feasible$tip.label
   # tips_splits <- split(focal_tips, ceiling(seq_along(focal_tips)/2000))
   # for (i in sequence(length(tips_splits))) {
   #   ott_ids <- c(ott_ids,rotl::tnrs_match_names(tips_splits[[i]])$ott_id)
@@ -154,7 +159,7 @@ GetEnclosingTaxonomy <- function(phy_focal) {
   }
   attr(classification_info, "db") <- "itis"
   attr(classification_info, "class") <- "classification"
-  names(classification_info) <- phy_focal$tip.label
+  names(classification_info) <- phy_feasible$tip.label
   classification_info <- classification_info[!is.na(classification_info)]
   ids <- lapply(classification_info, "[[", "id")
   ids_count <- table(unlist(ids))
@@ -173,22 +178,24 @@ GetEnclosingTaxonomy <- function(phy_focal) {
 
 #' Return a sampled tree
 #'
-#' @param phy_focal The tree to subsample
+#' @param phy_feasible The tree to subsample
 #' @param n The number of taxa to include
 #' @param phy_full The larger tree giving relationships
-#' @param replace If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa
-#' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the
+#' @param replace_full If TRUE, will allow selecting the same taxon from the full tree more than once. If FALSE, forbids this. Both cases return n taxa
+#' @param replace_feasible If TRUE, will allow selecting the same taxon from the set of feasible taxa more than once (returning a smaller than desired tree). If FALSE, forbids this.
+#' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the feasible tree
 #' @param less_memory If TRUE, uses a much slower approach that will not create giant matrices
 #' @return A phylo object where taxa are sampled based on representing flat sampling from taxonomy
 #' @export
-SubsampleTree <- function(phy_focal, n, phy_full=NULL, replace=TRUE, truncate_full_to_mrca=FALSE, less_memory=FALSE) {
+SubsampleTree <- function(phy_feasible, n, phy_full=NULL, replace_full=TRUE, replace_feasible=FALSE, truncate_full_to_mrca=FALSE, less_memory=FALSE) {
   if(is.null(phy_full)) {
-    phy_full <- GetEnclosingTaxonomy(phy_focal$tip.label)
+    phy_full <- GetEnclosingTaxonomy(phy_feasible$tip.label)
     if(ape::Nnode(phy_full)==1) {
       warning("Taxonomy tree is completely unresolved")
     }
   }
-  samples <- GetClosestSamples(n=n, phy_full=phy_full, taxa_possible=phy_focal$tip.label, replace=replace, truncate_full_to_mrca=truncate_full_to_mrca, less_memory=less_memory)
-  phy_sample <- ape::keep.tip(phy_focal, samples$closest)
+  samples <- GetClosestSamples(n=n, phy_full=phy_full, taxa_feasible=phy_feasible$tip.label, replace_full=replace_full,
+    replace_feasible=replace_feasible, truncate_full_to_mrca=truncate_full_to_mrca, less_memory=less_memory)
+  phy_sample <- ape::keep.tip(phy_feasible, samples$closest)
   return(phy_sample)
 }

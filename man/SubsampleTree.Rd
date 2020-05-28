@@ -5,24 +5,27 @@
 \title{Return a sampled tree}
 \usage{
 SubsampleTree(
-  phy_focal,
+  phy_feasible,
   n,
   phy_full = NULL,
-  replace = TRUE,
+  replace_full = TRUE,
+  replace_feasible = FALSE,
   truncate_full_to_mrca = FALSE,
   less_memory = FALSE
 )
 }
 \arguments{
-\item{phy_focal}{The tree to subsample}
+\item{phy_feasible}{The tree to subsample}
 
 \item{n}{The number of taxa to include}
 
 \item{phy_full}{The larger tree giving relationships}
 
-\item{replace}{If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa}
+\item{replace_full}{If TRUE, will allow selecting the same taxon from the full tree more than once. If FALSE, forbids this. Both cases return n taxa}
 
-\item{truncate_full_to_mrca}{If TRUE, prune the full tree to the node that is the MRCA of the}
+\item{replace_feasible}{If TRUE, will allow selecting the same taxon from the set of feasible taxa more than once (returning a smaller than desired tree). If FALSE, forbids this.}
+
+\item{truncate_full_to_mrca}{If TRUE, prune the full tree to the node that is the MRCA of the feasible tree}
 
 \item{less_memory}{If TRUE, uses a much slower approach that will not create giant matrices}
 }

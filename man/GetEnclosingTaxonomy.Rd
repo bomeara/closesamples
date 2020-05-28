@@ -2,9 +2,9 @@
 % Please edit documentation in R/closesamples.R
 \name{GetEnclosingTaxonomy}
 \alias{GetEnclosingTaxonomy}
-\title{Get enclosing taxonomy for a focal tree}
+\title{Get enclosing taxonomy for a feasible tree}
 \usage{
-GetEnclosingTaxonomy(phy_focal)
+GetEnclosingTaxonomy(phy_feasible)
 }
 \arguments{
 \item{tips}{A vetor of taxon names}
@@ -13,5 +13,5 @@ GetEnclosingTaxonomy(phy_focal)
 A phylogeny of the enclosing taxonomy
 }
 \description{
-If you don't have a taxonomy tree for the focal tree, this will find one
+If you don't have a taxonomy tree for the feasible tree, this will find one
 }

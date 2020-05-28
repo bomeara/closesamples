@@ -7,8 +7,9 @@
 GetClosestSamples(
   n,
   phy_full,
-  taxa_possible,
-  replace = TRUE,
+  taxa_feasible,
+  replace_full = TRUE,
+  replace_feasible = FALSE,
   truncate_full_to_mrca = FALSE,
   less_memory = FALSE
 )
@@ -16,18 +17,20 @@ GetClosestSamples(
 \arguments{
 \item{n}{How many taxa to sample}
 
-\item{phy_full}{A phylo object with all possible taxa to sammple from}
+\item{phy_full}{A phylo object with all feasible taxa to sample from}
 
-\item{taxa_possible}{A vector of taxon names that are possible to study (often on another tree)}
+\item{taxa_feasible}{A vector of taxon names that are feasible to study (often on another tree)}
 
-\item{replace}{If TRUE, will allow getting the same taxon more than once. If false, forbids this. Both cases return n taxa}
+\item{replace_full}{If TRUE, will allow selecting the same taxon from the full tree more than once. If FALSE, forbids this. Both cases return n taxa}
+
+\item{replace_feasible}{If TRUE, will allow selecting the same taxon from the set of feasible taxa more than once (returning a smaller than desired tree). If FALSE, forbids this.}
 
 \item{truncate_full_to_mrca}{If TRUE, prune the full tree to the node that is the MRCA of the}
 
 \item{less_memory}{If TRUE, uses a much slower approach that will not create giant matrices}
 }
 \value{
-A data.frame of chosen taxa, closest possible match, and distance between them
+A data.frame of chosen taxa, closest feasible match, and distance between them
 }
 \description{
 Get n samples

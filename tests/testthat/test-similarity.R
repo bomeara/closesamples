@@ -12,3 +12,10 @@ test_that("get data.frame of closest taxa works", {
   closest.df <- GetClosestSamples(n=3, phy, focal_species)
   expect_equal(nrow(closest.df), 3)
 })
+
+test_that("replacing works", {
+  ntax=10
+  phy <- ape::rcoal(ntax)
+  focal_species <- phy$tip.label
+  closest.df <- GetClosestSamples(n=ntax, phy, focal_species, replace_full=FALSE, replace_feasible=FALSE)
+})
