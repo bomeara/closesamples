@@ -39,7 +39,7 @@ GetClosest <- function(focal_taxon, similarity_matrix) {
 #' @param less_memory If TRUE, uses a much slower approach that will not create giant matrices
 #' @export
 #' @return A data.frame of chosen taxa, closest feasible match, and distance between them
-GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, replace_feasible=FALSE, truncate_full_to_mrca=FALSE, less_memory=FALSE) {
+GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, replace_feasible=FALSE, truncate_full_to_mrca=FALSE, less_memory=FALSE, ultrametric=FALSE) {
   taxa_feasible_pruned <- taxa_feasible[which(taxa_feasible %in% phy_full$tip.label)] #if not on the full tree, we can't find it
   if(length(taxa_feasible_pruned)<length(taxa_feasible)) {
     warning(paste0("Only ", length(taxa_feasible_pruned), " of ", length(taxa_feasible), " taxa passed matched taxa on the phy_full tree. The others have been excluded. Examples of taxa that failed are ", paste0(head(taxa_feasible[-which(taxa_feasible %in% phy_full$tip.label)]), collapse=", ")))
@@ -198,4 +198,29 @@ SubsampleTree <- function(phy_feasible, n, phy_full=NULL, replace_full=TRUE, rep
     replace_feasible=replace_feasible, truncate_full_to_mrca=truncate_full_to_mrca, less_memory=less_memory)
   phy_sample <- ape::keep.tip(phy_feasible, samples$closest)
   return(phy_sample)
+}
+
+#' Include descendant taxon ids in node labels
+#' @param node node number, typically a tip
+#' @param phy phylo object
+#' @param clean wipe existing node labels
+#' @param sep Separator
+#' @return A phylogeny with terminal node numbers as node.labels. Unfortunately, each will start with NA.
+LabelNodesWithChosenDescendants <- function(node, phy, clean=FALSE, sep=", ") {
+  if(clean | is.null(phy$node.label)) {
+    phy$node.label <- rep(NA, ape::Nnode(phy))
+  }
+  ancestor.nodes <- phangorn::Ancestors(phy, node, type="all")
+  phy$node.label[ancestor.nodes - ape::Ntip(phy)] <- paste(phy$node.label[ancestor.nodes - ape::Ntip(phy)], node, sep=sep)
+  return(phy)
+}
+
+LabelNodesWithFeasibleDescendants <- function(taxa_feasible, phy) {
+  tip_numbers <- which(phy$tip.label %in% taxa_feasible)
+  phy$node.label <- rep(NA, ape::Nnode(phy))
+  for(tip_index in seq_along(tip_numbers)) {
+    phy <- LabelNodesWithChosenDescendants(tip_numbers[tip_index], phy)
+  }
+  phy$node.label <- gsub("NA, ", "", phy$node.label)
+  return(phy)
 }
