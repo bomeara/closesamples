@@ -37,31 +37,73 @@ GetClosest <- function(focal_taxon, similarity_matrix) {
 #' @param replace_feasible If TRUE, will allow selecting the same taxon from the set of feasible taxa more than once (returning a smaller than desired tree). If FALSE, forbids this.
 #' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the
 #' @param less_memory If TRUE, uses a much slower approach that will not create giant matrices
+#' @param descendant_labeled If TRUE, assumes the phy_full has been labeled with LabelNodesWithFeasibleDescendants
 #' @export
 #' @return A data.frame of chosen taxa, closest feasible match, and distance between them
-GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, replace_feasible=FALSE, truncate_full_to_mrca=FALSE, less_memory=FALSE, ultrametric=FALSE) {
+GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, replace_feasible=FALSE, truncate_full_to_mrca=FALSE, less_memory=FALSE, descendant_labeled=FALSE) {
   taxa_feasible_pruned <- taxa_feasible[which(taxa_feasible %in% phy_full$tip.label)] #if not on the full tree, we can't find it
   if(length(taxa_feasible_pruned)<length(taxa_feasible)) {
     warning(paste0("Only ", length(taxa_feasible_pruned), " of ", length(taxa_feasible), " taxa passed matched taxa on the phy_full tree. The others have been excluded. Examples of taxa that failed are ", paste0(head(taxa_feasible[-which(taxa_feasible %in% phy_full$tip.label)]), collapse=", ")))
   }
-  chosen.df <- data.frame(chosen=rep(NA,n), closest=rep(NA,n), distance=rep(NA,n))
-  if(!less_memory) {
-    similarity_matrix_original <- GetSimilarity(phy_full, taxa_feasible_pruned, truncate_full_to_mrca=truncate_full_to_mrca)
-    similarity_matrix <- similarity_matrix_original
-    if(!replace_feasible & n>length(taxa_feasible_pruned)) {
-      stop("You have asked for more unique samples (n) than you have feasible taxa")
-    }
-    for (sample_iteration in sequence(n)) {
-      chosen_taxon <- sample(rownames(similarity_matrix),1)
-      closest_taxon <- GetClosest(chosen_taxon, similarity_matrix)
-      chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, similarity_matrix[chosen_taxon, closest_taxon], stringsAsFactors=FALSE)
+  if(!replace_feasible & n>length(taxa_feasible_pruned)) {
+    stop("You have asked for more unique samples (n) than you have feasible taxa")
+  }
 
-      # remember full is rows, feasible is columns
-      if(!replace_full) {
-        similarity_matrix <- similarity_matrix[!rownames(similarity_matrix) %in% chosen_taxon,]
+  chosen.df <- data.frame(chosen=rep(NA,n), closest=rep(NA,n), distance=rep(NA,n))
+
+  if(!less_memory) {
+    if(is.ultrametric(phy_full) | is.null(phy_full$edge.length)) {
+      if(!descendant_labeled) {
+        phy_full <- LabelNodesWithFeasibleDescendants(taxa_feasible_pruned, phy_full)
       }
-      if(!replace_feasible) {
-        similarity_matrix[,!colnames(similarity_matrix) %in% closest_taxon]
+      possible_choices <- phy_full$tip.label
+      taxa_feasible_pruned_id <- which(phy_full$tip.label %in% taxa_feasible_pruned)
+      for (sample_iteration in sequence(n)) {
+        chosen_taxon <- sample(possible_choices,1)
+        chosen_taxon_id <- which(phy_full$tip.label %in% chosen_taxon)
+
+        ancestor_nodes <- phangorn::Ancestors(phy_full, chosen_taxon_id, type="all")
+
+
+        ancestor_node_labels <- phy_full$node.label[ancestor_nodes - ape::Ntip(phy_full)]
+        ancestor_node_labels <- ancestor_node_labels[!is.na(ancestor_node_labels)]
+        ancestor_node_taxa <- strsplit(ancestor_node_labels, ", ")
+        for (i in seq_along(ancestor_node_taxa)) {
+          valid <- ancestor_node_taxa[[i]][ancestor_node_taxa[[i]] %in% taxa_feasible_pruned_id]
+          if(length(valid)>0) {
+            closest_taxon_id <- sample(valid,1)
+            break() #keep moving rootward until we find a match
+          }
+        }
+
+        closest_taxon <- phy_full$tip.label[closest_taxon_id]
+
+        if(!replace_full) {
+          possible_choices <- possible_choices[!possible_choices %in% chosen_taxon]
+        }
+        if(!replace_feasible) {
+          taxa_feasible_pruned <- taxa_feasible_pruned[!taxa_feasible_pruned %in% closest_taxon]
+        }
+
+
+        chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, NA, stringsAsFactors=FALSE)
+      }
+    } else {
+      similarity_matrix_original <- GetSimilarity(phy_full, taxa_feasible_pruned, truncate_full_to_mrca=truncate_full_to_mrca)
+      similarity_matrix <- similarity_matrix_original
+
+      for (sample_iteration in sequence(n)) {
+        chosen_taxon <- sample(rownames(similarity_matrix),1)
+        closest_taxon <- GetClosest(chosen_taxon, similarity_matrix)
+        chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, similarity_matrix[chosen_taxon, closest_taxon], stringsAsFactors=FALSE)
+
+        # remember full is rows, feasible is columns
+        if(!replace_full) {
+          similarity_matrix <- similarity_matrix[!rownames(similarity_matrix) %in% chosen_taxon,]
+        }
+        if(!replace_feasible) {
+          similarity_matrix[,!colnames(similarity_matrix) %in% closest_taxon]
+        }
       }
     }
   } else {

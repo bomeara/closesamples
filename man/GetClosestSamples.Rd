@@ -11,7 +11,8 @@ GetClosestSamples(
   replace_full = TRUE,
   replace_feasible = FALSE,
   truncate_full_to_mrca = FALSE,
-  less_memory = FALSE
+  less_memory = FALSE,
+  descendant_labeled = FALSE
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ GetClosestSamples(
 \item{truncate_full_to_mrca}{If TRUE, prune the full tree to the node that is the MRCA of the}
 
 \item{less_memory}{If TRUE, uses a much slower approach that will not create giant matrices}
+
+\item{descendant_labeled}{If TRUE, assumes the phy_full has been labeled with LabelNodesWithFeasibleDescendants}
 }
 \value{
 A data.frame of chosen taxa, closest feasible match, and distance between them
