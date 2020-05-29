@@ -13,9 +13,26 @@ test_that("get data.frame of closest taxa works", {
   expect_equal(nrow(closest.df), 3)
 })
 
-test_that("replacing works", {
+test_that("replacing works high mem", {
   ntax=10
   phy <- ape::rcoal(ntax)
   focal_species <- phy$tip.label
   closest.df <- GetClosestSamples(n=ntax, phy, focal_species, replace_full=FALSE, replace_feasible=FALSE)
+  expect_equal(nrow(closest.df), ntax)
+})
+
+test_that("replacing works low mem", {
+  ntax=10
+  phy <- ape::rcoal(ntax)
+  focal_species <- phy$tip.label
+  closest.df <- GetClosestSamples(n=ntax, phy, focal_species, replace_full=FALSE, replace_feasible=FALSE, less_memory=TRUE)
+  expect_equal(nrow(closest.df), ntax)
+})
+
+test_that("replacing works fast_ultrametric", {
+  ntax=10
+  phy <- ape::rcoal(ntax)
+  focal_species <- phy$tip.label
+  closest.df <- GetClosestSamples(n=ntax, phy, focal_species, replace_full=FALSE, replace_feasible=FALSE, fast_ultrametric=TRUE)
+  expect_equal(nrow(closest.df), ntax)
 })

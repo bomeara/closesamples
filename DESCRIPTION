@@ -14,12 +14,11 @@ Description: Often you want to pick species at random, but don't
 License: GPL 3.0
 Imports:
     ape,
-    taxize,
-    phytools,
-    utils,
-    phangorn
+    data.table,
+    phangorn,
+    taxize
 Suggests:
     anRpackage,
     testthat (>= 2.1.0)
-RoxygenNote: 7.1.0
 Encoding: UTF-8
+RoxygenNote: 7.1.0
