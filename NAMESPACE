@@ -5,3 +5,5 @@ export(GetEnclosingTaxonomy)
 export(LabelNodesWithFeasibleDescendants)
 export(SubsampleTree)
 import(data.table)
+importFrom(Rfast2, "Intersect")
+
