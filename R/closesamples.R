@@ -294,21 +294,22 @@ GetEnclosingTaxonomy <- function(phy_feasible) {
 #' @param replace_feasible If TRUE, will allow selecting the same taxon from the set of feasible taxa more than once (returning a smaller than desired tree). If FALSE, forbids this.
 #' @param truncate_full_to_mrca If TRUE, prune the full tree to the node that is the MRCA of the feasible tree
 #' @param less_memory If TRUE, uses a much slower approach that will not create giant matrices
+#' @param fast_ultrametric If TRUE, uses a fast algorithm for ultrametric trees
 #' @param verbose If TRUE, all the output will print to the screen
 #' @return A phylo object where taxa are sampled based on representing flat sampling from taxonomy
 
 #' @export
-SubsampleTree <- function(phy_feasible, n, phy_full=NULL, replace_full=TRUE, replace_feasible=FALSE, truncate_full_to_mrca=FALSE, less_memory=FALSE, verbose=TRUE) {
-  if(is.null(phy_full)) {
-    phy_full <- GetEnclosingTaxonomy(phy_feasible$tip.label)
-    if(ape::Nnode(phy_full)==1) {
-      warning("Taxonomy tree is completely unresolved")
+SubsampleTree <- function(phy_feasible, n, phy_full=NULL, replace_full=TRUE, replace_feasible=FALSE, truncate_full_to_mrca=FALSE, less_memory=FALSE, fast_ultrametric=FALSE, verbose=TRUE) {
+    if(is.null(phy_full)) {
+        phy_full <- GetEnclosingTaxonomy(phy_feasible$tip.label)
+        if(ape::Nnode(phy_full)==1) {
+            warning("Taxonomy tree is completely unresolved")
+        }
     }
-  }
-  samples <- GetClosestSamples(n=n, phy_full=phy_full, taxa_feasible=phy_feasible$tip.label, replace_full=replace_full,
-    replace_feasible=replace_feasible, truncate_full_to_mrca=truncate_full_to_mrca, less_memory=less_memory, verbose=verbose)
-  phy_sample <- ape::keep.tip(phy_feasible, samples$closest)
-  return(phy_sample)
+    samples <- GetClosestSamples(n=n, phy_full=phy_full, taxa_feasible=phy_feasible$tip.label, replace_full=replace_full,
+    replace_feasible=replace_feasible, truncate_full_to_mrca=truncate_full_to_mrca, less_memory=less_memory, fast_ultrametric=fast_ultrametric, verbose=verbose)
+    phy_sample <- ape::keep.tip(phy_feasible, samples$closest)
+    return(phy_sample)
 }
 
 #' Include descendant taxon ids in node labels
