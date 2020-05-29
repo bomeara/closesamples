@@ -42,6 +42,7 @@ GetClosest <- function(focal_taxon, similarity_matrix) {
 #' @param verbose If TRUE, all the output will print to the screen
 #' @export
 #' @return A data.frame of chosen taxa, closest feasible match, and distance between them
+#' @import data.table
 GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, replace_feasible=FALSE, truncate_full_to_mrca=FALSE, less_memory=FALSE, descendant_labeled=FALSE, fast_ultrametric=FALSE, verbose=TRUE) {
 
   # data.table is lovable but quirky

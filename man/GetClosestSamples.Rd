@@ -13,7 +13,8 @@ GetClosestSamples(
   truncate_full_to_mrca = FALSE,
   less_memory = FALSE,
   descendant_labeled = FALSE,
-  fast_ultrametric = FALSE
+  fast_ultrametric = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ GetClosestSamples(
 \item{descendant_labeled}{If TRUE, assumes the phy_full has been labeled with LabelNodesWithFeasibleDescendants}
 
 \item{fast_ultrametric}{If TRUE, uses a fast algorithm for ultrametric trees}
+
+\item{verbose}{If TRUE, all the output will print to the screen}
 }
 \value{
 A data.frame of chosen taxa, closest feasible match, and distance between them
