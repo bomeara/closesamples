@@ -147,7 +147,7 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
       print("Chose taxa from the full tree")
       for (potential_closest_i in sequence(length(taxa_feasible_pruned))) {
         actual_id <- which(phy_full$tip.label == taxa_feasible_pruned[potential_closest_i])
-        potential_taxon_list[[potential_closest_i]] <- list(id=actual_id, ancestors=c(actual_id, phangorn::Ancestors(phy_full, actual_id, type="all")))
+        potential_taxon_list[[potential_closest_i]] <- c(actual_id, phangorn::Ancestors(phy_full, actual_id, type="all"))
       }
       print("Got ancestral paths for the potential taxa")
 
