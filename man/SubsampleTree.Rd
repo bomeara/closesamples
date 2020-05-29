@@ -11,7 +11,8 @@ SubsampleTree(
   replace_full = TRUE,
   replace_feasible = FALSE,
   truncate_full_to_mrca = FALSE,
-  less_memory = FALSE
+  less_memory = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ SubsampleTree(
 \item{truncate_full_to_mrca}{If TRUE, prune the full tree to the node that is the MRCA of the feasible tree}
 
 \item{less_memory}{If TRUE, uses a much slower approach that will not create giant matrices}
+
+\item{verbose}{If TRUE, all the output will print to the screen}
 }
 \value{
 A phylo object where taxa are sampled based on representing flat sampling from taxonomy
