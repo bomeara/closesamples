@@ -2,6 +2,6 @@
 
 export(GetClosestSamples)
 export(GetEnclosingTaxonomy)
+export(LabelNodesWithFeasibleDescendants)
 export(SubsampleTree)
-import(ape, data.table, phangorn, taxize)
-importFrom(Rfast2, Intersect) 
+import(data.table)

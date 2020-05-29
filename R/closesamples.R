@@ -51,7 +51,7 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
   . = NULL
 
   taxa_feasible_pruned <- taxa_feasible[which(taxa_feasible %in% phy_full$tip.label)] #if not on the full tree, we can't find it
-  
+
   if(length(taxa_feasible_pruned)<length(taxa_feasible)) {
     warning(paste0("Only ", length(taxa_feasible_pruned), " of ", length(taxa_feasible), " taxa passed matched taxa on the phy_full tree. The others have been excluded. Examples of taxa that failed are ", paste0(head(taxa_feasible[-which(taxa_feasible %in% phy_full$tip.label)]), collapse=", ")))
   }
@@ -160,7 +160,7 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
                  full_heights[row.index,1] <- node.ages[phy_full$edge[row.index,1]]
                  full_heights[row.index,2] <- node.ages[phy_full$edge[row.index,2]]
              }
-             
+
              ### Added ###
              tmp.df <- cbind(full_heights, phy_full$edge[,1], phy_full$edge[,2])
              colnames(tmp.df) <- c("RootwardAge", "TipwardAge", "FocalNode", "DesNode")
@@ -193,7 +193,7 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
                  if(verbose){
                      print(paste0(100*run_count/(n*length(taxa_feasible_pruned)), "% done; ", round(difftime(current_time, start_time, units="min"),2), " min elapsed so far; approx. ", round(((n*length(taxa_feasible_pruned)-run_count)*as.numeric(difftime(current_time, start_time, units="min")) / run_count)), " min remain"))
                  }
-                 
+
                  if(!replace_feasible) {
                      names_distances <- names_distances[!names(names_distances) %in% names_used]
                      closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
@@ -326,6 +326,11 @@ LabelNodesWithChosenDescendants <- function(node, phy, clean=FALSE, sep=", ") {
   return(phy)
 }
 
+#' Include descendant taxon ids in node labels
+#' @param taxa_feasible vector of taxon names that are feasible for later suse
+#' @param phy phylo object
+#' @return A phylogeny with terminal node numbers as node.labels.
+#' @export
 LabelNodesWithFeasibleDescendants <- function(taxa_feasible, phy) {
   tip_numbers <- which(phy$tip.label %in% taxa_feasible)
   phy$node.label <- rep(NA, ape::Nnode(phy))
