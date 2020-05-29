@@ -3,4 +3,4 @@
 export(GetClosestSamples)
 export(GetEnclosingTaxonomy)
 export(SubsampleTree)
-import(data.table)
+import(ape, data.table, phangorn, taxize)

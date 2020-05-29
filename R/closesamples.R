@@ -159,10 +159,12 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
                  full_heights[row.index,1] <- node.ages[phy_full$edge[row.index,1]]
                  full_heights[row.index,2] <- node.ages[phy_full$edge[row.index,2]]
              }
-
+             
              ### Added ###
              tmp.df <- cbind(full_heights, phy_full$edge[,1], phy_full$edge[,2])
              colnames(tmp.df) <- c("RootwardAge", "TipwardAge", "FocalNode", "DesNode")
+             tmp.df <- rbind(tmp.df, c(max(ape::branching.times(phy_full)), max(ape::branching.times(phy_full)), NA, Ntip(phy_full)+1))
+
              full_heights.dt <- data.table::as.data.table(tmp.df)
              ###########
 
@@ -175,12 +177,12 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
                  names(names_distances) <- taxa_feasible_pruned
                  chosen_taxon_id <- which(phy_full$tip.label == chosen_taxon)
                  chosen_taxon_ancestors <- phangorn::Ancestors(phy_full, chosen_taxon_id, type="all")
-                 data.table::setkey(full_heights.dt, FocalNode)
+                 data.table::setkey(full_heights.dt, DesNode)
                  #for (potential_closest_taxon in sequence(length(taxa_feasible_pruned))) {
                      #mrca_node <- intersect(potential_taxon_list[[potential_closest_taxon]]$ancestors, chosen_taxon_ancestors)[1]
                      mrca_node <- unlist(lapply(potential_taxon_list, GetIntersection, chosen_taxon_ancestors))
                      rows <- full_heights.dt[.(mrca_node), which=TRUE]
-                     names_distances[1:length(rows)] <- full_heights.dt[rows,RootwardAge]
+                     names_distances[1:length(rows)] <- full_heights.dt[rows, TipwardAge]
                      #utils::setTxtProgressBar(pb, value=potential_taxon+(sample_iteration-1)*ape::Ntip(phy_full))
                      #run_count <- run_count+1
                  #}
