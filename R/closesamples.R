@@ -192,6 +192,11 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
                      print(paste0(100*run_count/(n*length(taxa_feasible_pruned)), "% done; ", round(difftime(current_time, start_time, units="min"),2), " min elapsed so far; approx. ", round(((n*length(taxa_feasible_pruned)-run_count)*as.numeric(difftime(current_time, start_time, units="min")) / run_count)), " min remain"))
                  }
                  closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
+                 
+                 if(!replace_feasible) {
+                     taxa_feasible_pruned <- taxa_feasible_pruned[!taxa_feasible_pruned %in% closest_taxon]
+                 }
+                 
                  chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, min(names_distances), stringsAsFactors=FALSE)
       #        }
       #
@@ -217,7 +222,7 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
       #   current_time <- Sys.time()
       #   print(paste0(100*run_count/(n*length(taxa_feasible_pruned)), "% done; ", round(difftime(current_time, start_time, units="min"),2), " min elapsed so far; approx. ", round(((n*length(taxa_feasible_pruned)-run_count)*as.numeric(difftime(current_time, start_time, units="min")) / run_count)), " min remain"))
       #   closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
-        chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, min(names_distances), stringsAsFactors=FALSE)
+      #   chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, min(names_distances), stringsAsFactors=FALSE)
 
       }
     }
