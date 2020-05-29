@@ -51,6 +51,7 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
   . = NULL
 
   taxa_feasible_pruned <- taxa_feasible[which(taxa_feasible %in% phy_full$tip.label)] #if not on the full tree, we can't find it
+  
   if(length(taxa_feasible_pruned)<length(taxa_feasible)) {
     warning(paste0("Only ", length(taxa_feasible_pruned), " of ", length(taxa_feasible), " taxa passed matched taxa on the phy_full tree. The others have been excluded. Examples of taxa that failed are ", paste0(head(taxa_feasible[-which(taxa_feasible %in% phy_full$tip.label)]), collapse=", ")))
   }
@@ -171,6 +172,7 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
              print("Got heights of all nodes on the full tree")
              run_count <- 0
              start_time <- Sys.time()
+             names_used <- c()
              for (sample_iteration in sequence(n)) {
                  chosen_taxon <- chosen_taxa[sample_iteration]
                  names_distances <- rep(NA, length(taxa_feasible_pruned))
@@ -191,12 +193,14 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
                  if(verbose){
                      print(paste0(100*run_count/(n*length(taxa_feasible_pruned)), "% done; ", round(difftime(current_time, start_time, units="min"),2), " min elapsed so far; approx. ", round(((n*length(taxa_feasible_pruned)-run_count)*as.numeric(difftime(current_time, start_time, units="min")) / run_count)), " min remain"))
                  }
-                 closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
                  
                  if(!replace_feasible) {
-                     taxa_feasible_pruned <- taxa_feasible_pruned[!taxa_feasible_pruned %in% closest_taxon]
+                     names_distances <- names_distances[!names(names_distances) %in% names_used]
+                     closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
+                     names_used <- c(names_used, closest_taxon)
+                 }else{
+                     closest_taxon <- sample(names(names_distances)[which.min(names_distances)], 1)
                  }
-                 
                  chosen.df[sample_iteration,] <- data.frame(chosen_taxon, closest_taxon, min(names_distances), stringsAsFactors=FALSE)
       #        }
       #
