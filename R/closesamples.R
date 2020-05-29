@@ -182,7 +182,7 @@ GetClosestSamples <- function(n, phy_full, taxa_feasible, replace_full=TRUE, rep
                  data.table::setkey(full_heights.dt, DesNode)
                  #for (potential_closest_taxon in sequence(length(taxa_feasible_pruned))) {
                      #mrca_node <- intersect(potential_taxon_list[[potential_closest_taxon]]$ancestors, chosen_taxon_ancestors)[1]
-                     mrca_node <- unlist(lapply(potential_taxon_list, GetIntersection, chosen_taxon_ancestors))
+                     mrca_node <- unlist(lapply(potential_taxon_list, GetIntersection, chosen_taxon_ancestors), recursive=FALSE, use.name=FALSE)
                      rows <- full_heights.dt[.(mrca_node), which=TRUE]
                      names_distances[1:length(rows)] <- full_heights.dt[rows, TipwardAge]
                      #utils::setTxtProgressBar(pb, value=potential_taxon+(sample_iteration-1)*ape::Ntip(phy_full))
@@ -337,5 +337,9 @@ LabelNodesWithFeasibleDescendants <- function(taxa_feasible, phy) {
 }
 
 GetIntersection <- function(x, y){
-    intersect(x, y)[1]
+    #Note that this intersection function reverses the order of the output compared to R base intersect().
+    #So, now rather than grabbing the first item, we grab the last
+    #return(intersect(x, y)[1])
+    tmp <- Intersect(x, y)
+    return(tmp[length(tmp)])
 }
