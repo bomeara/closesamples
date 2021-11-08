@@ -16,7 +16,8 @@ Imports:
     ape,
     data.table,
     phangorn,
-    taxize
+    taxize,
+	Rfast2
 Suggests:
     anRpackage,
     testthat (>= 2.1.0)
